@@ -1,6 +1,6 @@
 # ⚡ Vercel Deployment - Quick Fix Guide
 
-## 🎯 The Error You Got
+## 🎯 The Error You Might Get
 
 ```
 Environment Variable "MONGODB_URI" references Secret "mongodb_uri", which does not exist.
@@ -8,7 +8,7 @@ Environment Variable "MONGODB_URI" references Secret "mongodb_uri", which does n
 
 ## ✅ FIXED!
 
-I've updated the `vercel.json` files to remove the secret references. Now you'll add environment variables directly in the Vercel dashboard.
+The `vercel.json` files are configured correctly. You'll add environment variables directly in the Vercel dashboard.
 
 ---
 
@@ -35,40 +35,34 @@ Click **"Environment Variables"** section and add these **ONE BY ONE**:
 
 **Add each variable separately:**
 
-1. **Variable 1:**
+1. **NODE_ENV**
    - Name: `NODE_ENV`
    - Value: `production`
-   - Click "Add"
 
-2. **Variable 2:**
+2. **PORT**
    - Name: `PORT`
    - Value: `5000`
-   - Click "Add"
 
-3. **Variable 3:**
+3. **MONGODB_URI**
    - Name: `MONGODB_URI`
-   - Value: `mongodb+srv://quickmart:Quick123@cluster0.d2otalv.mongodb.net/quick-commerce?retryWrites=true&w=majority`
-   - Click "Add"
+   - Value: Your MongoDB Atlas connection string from `.env` file
+   - Format: `mongodb+srv://username:password@cluster.mongodb.net/database-name?retryWrites=true&w=majority`
 
-4. **Variable 4:**
+4. **RAZORPAY_KEY_ID**
    - Name: `RAZORPAY_KEY_ID`
-   - Value: `rzp_test_TCERL7k0LC51DU`
-   - Click "Add"
+   - Value: Your Razorpay test key ID (starts with `rzp_test_`)
 
-5. **Variable 5:**
+5. **RAZORPAY_KEY_SECRET**
    - Name: `RAZORPAY_KEY_SECRET`
-   - Value: `AMj31VKTIn4eZXX7ZRSw1Gza`
-   - Click "Add"
+   - Value: Your Razorpay secret key
 
-6. **Variable 6:**
+6. **TELEGRAM_BOT_TOKEN**
    - Name: `TELEGRAM_BOT_TOKEN`
-   - Value: `7992265335:AAEq5Skrf8gWZ8_2snZsZ3KOVnu1fRihYeQ`
-   - Click "Add"
+   - Value: Your Telegram bot token (from @BotFather)
 
-7. **Variable 7:**
+7. **TELEGRAM_CHAT_ID**
    - Name: `TELEGRAM_CHAT_ID`
-   - Value: `7639954021`
-   - Click "Add"
+   - Value: Your Telegram chat ID (from @userinfobot)
 
 ### Step 4: Deploy
 
@@ -129,8 +123,7 @@ Click **"Environment Variables"** and add:
 **IMPORTANT:** Use YOUR backend URL from Step 5 above!
 
 - Name: `VITE_API_URL`
-- Value: `https://quickmart-backend-abc123.vercel.app` (YOUR actual backend URL)
-- Click "Add"
+- Value: `https://your-backend-url.vercel.app` (YOUR actual backend URL)
 
 ### Step 4: Deploy
 
@@ -147,19 +140,13 @@ Your app should load with all products!
 
 ---
 
-## 📸 Screenshot Guide
+## 📸 Where to Find Your Credentials
 
-### Where to Add Environment Variables
+All credentials are in your local `backend/.env` file. **DO NOT** commit this file to GitHub!
 
-When you're on the deployment configuration page:
-
-1. Scroll down to **"Environment Variables"**
-2. You'll see 3 fields:
-   - **Name** (e.g., `MONGODB_URI`)
-   - **Value** (e.g., your MongoDB connection string)
-   - **Environment** (leave as "All" - Production, Preview, Development)
-3. Click **"Add"** after each variable
-4. Repeat for all variables
+To find them:
+1. Open `backend/.env` on your computer
+2. Copy each value and paste into Vercel dashboard
 
 ---
 
@@ -167,7 +154,7 @@ When you're on the deployment configuration page:
 
 **Backend:**
 - [ ] Root directory set to `backend`
-- [ ] All 7 environment variables added
+- [ ] All 7 environment variables added (from your `.env` file)
 - [ ] Deployed successfully
 - [ ] Backend URL copied
 - [ ] Tested `/` endpoint
@@ -204,41 +191,16 @@ When you're on the deployment configuration page:
 2. Verify backend URL is correct in frontend env
 3. Test backend API directly in browser
 
-### Issue: "Build failed"
-
-**Solution:**
-1. Check build logs in Vercel
-2. Make sure you selected correct root directory
-3. Ensure `package.json` exists in the root directory
-
 ---
 
-## 🎯 Quick Reference
+## 🔒 Security Notes
 
-**Backend Environment Variables:**
-```
-NODE_ENV=production
-PORT=5000
-MONGODB_URI=mongodb+srv://quickmart:Quick123@cluster0.d2otalv.mongodb.net/quick-commerce?retryWrites=true&w=majority
-RAZORPAY_KEY_ID=rzp_test_TCERL7k0LC51DU
-RAZORPAY_KEY_SECRET=AMj31VKTIn4eZXX7ZRSw1Gza
-TELEGRAM_BOT_TOKEN=7992265335:AAEq5Skrf8gWZ8_2snZsZ3KOVnu1fRihYeQ
-TELEGRAM_CHAT_ID=7639954021
-```
-
-**Frontend Environment Variable:**
-```
-VITE_API_URL=https://your-backend-url.vercel.app
-```
-
----
-
-## 📞 Need More Help?
-
-If you still face issues:
-1. Take a screenshot of the error
-2. Check Vercel deployment logs
-3. Verify all environment variables are added correctly
+- ⚠️ Never commit `.env` file to GitHub
+- ⚠️ Never share API keys publicly
+- ⚠️ Use test keys for development
+- ⚠️ Rotate keys if accidentally exposed
+- ✅ Add secrets only in Vercel dashboard
+- ✅ Keep `.env` in `.gitignore`
 
 ---
 
