@@ -195,3 +195,79 @@ export const seedProducts = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Add a new product (Admin)
+// @route   POST /api/products/add
+// @access  Public (should be protected in production)
+export const addProduct = async (req, res) => {
+  try {
+    const { name, price, category, unit, stock, description, discount, imageUrl } = req.body;
+
+    // Validate required fields
+    if (!name || !price || !stock) {
+      return res.status(400).json({ message: 'Please provide name, price, and stock' });
+    }
+
+    let imageLink = imageUrl;
+
+    // If file uploaded, use Cloudinary with memory buffer
+    if (req.file) {
+      const cloudinary = (await import('../config/cloudinary.js')).default;
+      
+      // Upload buffer to Cloudinary using upload_stream
+      const uploadPromise = new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'quickmart-products',
+            transformation: [
+              { width: 500, height: 500, crop: 'limit' },
+              { quality: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+
+        // Write buffer to stream
+        uploadStream.end(req.file.buffer);
+      });
+
+      const result = await uploadPromise;
+      imageLink = result.secure_url;
+    }
+
+    // Check if image exists
+    if (!imageLink) {
+      return res.status(400).json({ message: 'Please provide an image file or URL' });
+    }
+
+    // Create product
+    const product = new Product({
+      name,
+      price: parseFloat(price),
+      image: imageLink,
+      category,
+      stock: parseInt(stock),
+      unit: unit || 'piece',
+      description: description || '',
+      discount: parseInt(discount) || 0,
+      inStock: parseInt(stock) > 0
+    });
+
+    const savedProduct = await product.save();
+
+    res.status(201).json({
+      message: 'Product added successfully',
+      ...savedProduct.toObject()
+    });
+
+  } catch (error) {
+    console.error('Error adding product:', error);
+    res.status(500).json({ 
+      message: 'Failed to add product',
+      error: error.message 
+    });
+  }
+};
