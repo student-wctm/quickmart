@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+package-lock.json
+yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build outputs (will be rebuilt)
+dist
+build
+
+# Development files
+*.log
+.DS_Store
+Thumbs.db
+
+# ngrok files
+ngrok.yml
+*.ngrok-free.dev
+
+# Testing and local scripts
+test-*.ps1
+start-with-ngrok.*
+
+# Documentation
+NGROK_*.md
+RESTART_GUIDE.md
+PUSH_SUMMARY.md
+GITHUB_PUSH_GUIDE.md
+QUICK_START.md
+
+# Git
+.git
+.gitignore

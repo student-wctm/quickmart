@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 import Banner from '../components/Banner';
 import CategorySection from '../components/CategorySection';
 import ProductCard from '../components/ProductCard';
@@ -30,7 +31,7 @@ const Home = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('/api/products');
+      const response = await axios.get(`${API_BASE_URL}/api/products`);
       setProducts(response.data);
       setLoading(false);
     } catch (error) {

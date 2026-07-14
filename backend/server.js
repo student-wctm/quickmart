@@ -21,8 +21,28 @@ connectDB().catch((error) => {
 
 const app = express();
 
+// Add request logging middleware for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin || 'No origin'}`);
+  next();
+});
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://fragment-unsubtle-simmering.ngrok-free.dev',
+    /\.ngrok-free\.dev$/,
+    /\.ngrok\.io$/,
+    /\.vercel\.app$/,  // Allow all Vercel preview and production deployments
+    'https://quickmart.vercel.app',  // Production frontend
+    'https://quickmart-student-wctm.vercel.app',  // Alternate Vercel URL
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -47,6 +67,8 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Local: http://localhost:${PORT}`);
+  console.log(`Network: http://0.0.0.0:${PORT}`);
 });
