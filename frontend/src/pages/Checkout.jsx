@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { FiArrowLeft, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiAlertCircle, FiCheckCircle, FiMapPin } from 'react-icons/fi';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { DELIVERY_FEE } from '../constants';
 import { createOrder } from '../utils/orderApi';
 import AddressForm from '../components/checkout/AddressForm';
-import OrderSummary from '../components/checkout/OrderSummary';
 import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 import RazorpayButton from '../components/RazorpayButton';
 import CancellationPolicy from '../components/checkout/CancellationPolicy';
 import EnhancedBillDetails from '../components/checkout/EnhancedBillDetails';
+import LocationModal from '../components/LocationModal';
+import LocationUnavailable from '../components/LocationUnavailable';
+import API_BASE_URL from '../config/api';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -23,6 +25,10 @@ const Checkout = () => {
   const [pincodeValid, setPincodeValid] = useState(true);
   const [allowedPincode, setAllowedPincode] = useState('');
   const [openMode, setOpenMode] = useState(true);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showLocationUnavailable, setShowLocationUnavailable] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [shopLocation, setShopLocation] = useState(null);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: '',
@@ -79,6 +85,56 @@ const Checkout = () => {
     }
   };
 
+  // Handle location confirmation from modal
+  const handleLocationConfirm = async (locationData) => {
+    const { latitude, longitude, address, pincode } = locationData;
+    
+    setSelectedLocation({latitude, longitude});
+    
+    // Validate location with backend
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/settings/validate-location`, {
+        latitude,
+        longitude
+      });
+
+      if (response.data.valid) {
+        // Location is valid - update form
+        setFormData(prev => ({
+          ...prev,
+          address: address,
+          pincode: pincode || prev.pincode,
+          latitude,
+          longitude
+        }));
+        
+        setShowLocationModal(false);
+        setPincodeValid(true);
+        setPincodeError('');
+        
+        // Validate pincode if extracted
+        if (pincode) {
+          validatePincodeInput(pincode);
+        }
+      } else {
+        // Location is outside delivery zone
+        setShowLocationModal(false);
+        setShowLocationUnavailable(true);
+      }
+    } catch (error) {
+      console.error('Location validation error:', error);
+      // Fail-safe: allow location if validation fails
+      setFormData(prev => ({
+        ...prev,
+        address: address,
+        pincode: pincode || prev.pincode,
+        latitude,
+        longitude
+      }));
+      setShowLocationModal(false);
+    }
+  };
+
   if (cartItems.length === 0) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
@@ -116,6 +172,8 @@ const Checkout = () => {
           address: {
             street: formData.address,
             pincode: formData.pincode,
+            latitude: formData.latitude,
+            longitude: formData.longitude,
           },
         },
         orderItems: cartItems.map((item) => ({
@@ -160,6 +218,8 @@ const Checkout = () => {
         address: {
           street: formData.address,
           pincode: formData.pincode,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
         },
       },
       orderItems: cartItems.map((item) => ({
@@ -219,7 +279,17 @@ const Checkout = () => {
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
-              <h2 className="font-bold text-lg mb-4 text-gray-800">Delivery Address</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-lg text-gray-800">Delivery Address</h2>
+                <button
+                  onClick={() => setShowLocationModal(true)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-primary border border-primary rounded-lg hover:bg-green-50 transition"
+                >
+                  <FiMapPin />
+                  Change Location
+                </button>
+              </div>
+              
               <AddressForm 
                 formData={formData} 
                 onChange={(updatedData) => {
@@ -310,6 +380,25 @@ const Checkout = () => {
           </div>
         </div>
       </form>
+
+      {/* Location Selection Modal */}
+      <LocationModal
+        isOpen={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        onLocationConfirm={handleLocationConfirm}
+        shopLocation={shopLocation}
+      />
+
+      {/* Location Unavailable Screen */}
+      {showLocationUnavailable && (
+        <LocationUnavailable
+          onBack={() => {
+            setShowLocationUnavailable(false);
+            setShowLocationModal(true);
+          }}
+          locationName={formData.address}
+        />
+      )}
     </div>
   );
 };

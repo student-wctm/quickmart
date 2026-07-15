@@ -19,6 +19,24 @@ const settingsSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    storeLocation: {
+      latitude: {
+        type: Number,
+        default: 26.8467, // Default: Lucknow, India
+      },
+      longitude: {
+        type: Number,
+        default: 80.9462,
+      },
+      address: {
+        type: String,
+        default: '',
+      },
+    },
+    deliveryRadius: {
+      type: Number,
+      default: 10, // Default 10km delivery radius
+    },
     deliveryFee: {
       type: Number,
       default: 40,
