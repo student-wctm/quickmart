@@ -2,6 +2,71 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import { sendOrderNotification } from '../services/telegramService.js';
 
+// @desc    Test Telegram notification (for debugging)
+// @route   GET /api/orders/test-telegram
+// @access  Public
+export const testTelegramNotification = async (req, res) => {
+  try {
+    console.log('🧪 Testing Telegram notification...');
+    
+    // Create a mock order for testing
+    const mockOrder = {
+      _id: 'TEST-ORDER-' + Date.now(),
+      user: {
+        name: 'Test User',
+        email: 'test@example.com',
+        phone: '+1234567890',
+        address: {
+          street: '123 Test Street, Test City',
+          pincode: '123456'
+        }
+      },
+      orderItems: [
+        {
+          name: 'Test Product',
+          quantity: 2,
+          price: 100
+        }
+      ],
+      totalPrice: 200,
+      deliveryFee: 40,
+      finalAmount: 240,
+      paymentMethod: 'Cash on Delivery',
+      status: 'Pending'
+    };
+
+    const result = await sendOrderNotification(mockOrder);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: 'Test notification sent successfully! Check your Telegram chat.',
+        details: result
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to send test notification',
+        reason: result.reason,
+        details: result.details || {},
+        troubleshooting: {
+          'not_configured': 'Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Vercel environment variables',
+          'Unauthorized': 'Invalid BOT_TOKEN - Get a new one from @BotFather on Telegram',
+          'chat not found': 'Invalid CHAT_ID - Get yours from @userinfobot or @raw_data_bot on Telegram',
+          'bot was blocked': 'Unblock the bot in your Telegram chat and try again'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Test notification error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during test',
+      error: error.message 
+    });
+  }
+};
+
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Public
