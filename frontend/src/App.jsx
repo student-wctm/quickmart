@@ -6,6 +6,10 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import OrderSuccess from './pages/OrderSuccess';
 import AdminDashboard from './pages/AdminDashboard';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import RefundPolicy from './pages/RefundPolicy';
+import TermsOfService from './pages/TermsOfService';
+import Login from './pages/Login';
 
 function App() {
   return (
@@ -16,9 +20,13 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order-success/:orderId" element={<OrderSuccess />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
         </Route>
-        {/* Admin route without AppLayout */}
+        {/* Standalone routes without AppLayout */}
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
   );

@@ -27,10 +27,6 @@ export const createOrder = async (req, res) => {
 
     const createdOrder = await order.save();
 
-    sendOrderNotification(createdOrder).catch((err) => {
-      console.error('Telegram notification error:', err.message);
-    });
-
     // Update product stock
     for (const item of orderItems) {
       const product = await Product.findById(item.product);
@@ -43,8 +39,23 @@ export const createOrder = async (req, res) => {
       }
     }
 
+    // Send Telegram notification (non-blocking, with error handling)
+    sendOrderNotification(createdOrder)
+      .then((result) => {
+        if (result.success) {
+          console.log('✅ Telegram notification sent successfully');
+        } else {
+          console.warn('⚠️  Telegram notification skipped or failed:', result.reason);
+        }
+      })
+      .catch((err) => {
+        console.error('❌ Telegram notification error (non-critical):', err.message);
+      });
+
+    // Always return success response even if Telegram fails
     res.status(201).json(createdOrder);
   } catch (error) {
+    console.error('Order creation error:', error);
     res.status(400).json({ message: error.message });
   }
 };

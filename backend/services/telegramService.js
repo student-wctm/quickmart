@@ -30,11 +30,14 @@ export const sendOrderNotification = async (order) => {
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (!botToken || !chatId) {
-    console.warn('Telegram notification skipped: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
+    console.warn('⚠️  Telegram notification skipped: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured');
     return { success: false, reason: 'not_configured' };
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const response = await fetch(`${TELEGRAM_API_BASE}${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -43,19 +46,26 @@ export const sendOrderNotification = async (order) => {
         text: formatOrderMessage(order),
         parse_mode: 'Markdown',
       }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     const data = await response.json();
 
     if (!response.ok || !data.ok) {
-      console.error('Telegram API error:', data.description || 'Unknown error');
-      return { success: false, reason: data.description };
+      console.error('❌ Telegram API error:', data.description || 'Unknown error');
+      return { success: false, reason: data.description || 'api_error' };
     }
 
-    console.log('Telegram order notification sent successfully');
+    console.log('✅ Telegram order notification sent successfully');
     return { success: true };
   } catch (error) {
-    console.error('Failed to send Telegram notification:', error.message);
+    if (error.name === 'AbortError') {
+      console.error('❌ Telegram notification timeout (10s exceeded)');
+      return { success: false, reason: 'timeout' };
+    }
+    console.error('❌ Failed to send Telegram notification:', error.message);
     return { success: false, reason: error.message };
   }
 };

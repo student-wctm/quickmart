@@ -271,3 +271,83 @@ export const addProduct = async (req, res) => {
     });
   }
 };
+
+// @desc    Delete a product (Admin)
+// @route   DELETE /api/products/:id
+// @access  Public (should be protected in production)
+export const deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Delete image from Cloudinary if it's a Cloudinary URL
+    if (product.image && product.image.includes('cloudinary.com')) {
+      try {
+        const cloudinary = (await import('../config/cloudinary.js')).default;
+        // Extract public_id from Cloudinary URL
+        const urlParts = product.image.split('/');
+        const fileName = urlParts[urlParts.length - 1].split('.')[0];
+        const folder = urlParts[urlParts.length - 2];
+        const publicId = `${folder}/${fileName}`;
+        
+        await cloudinary.uploader.destroy(publicId);
+        console.log('Image deleted from Cloudinary:', publicId);
+      } catch (cloudinaryError) {
+        console.error('Cloudinary deletion error:', cloudinaryError.message);
+        // Continue with product deletion even if Cloudinary delete fails
+      }
+    }
+
+    await Product.findByIdAndDelete(req.params.id);
+
+    res.json({ 
+      message: 'Product deleted successfully',
+      deletedProduct: product
+    });
+
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ 
+      message: 'Failed to delete product',
+      error: error.message 
+    });
+  }
+};
+
+// @desc    Toggle product stock status (Admin)
+// @route   PATCH /api/products/:id/stock
+// @access  Public (should be protected in production)
+export const toggleProductStock = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Toggle inStock status
+    product.inStock = !product.inStock;
+
+    // If marking as out of stock, set stock to 0
+    if (!product.inStock) {
+      product.stock = 0;
+    }
+
+    const updatedProduct = await product.save();
+
+    res.json({
+      message: `Product marked as ${updatedProduct.inStock ? 'In Stock' : 'Out of Stock'}`,
+      ...updatedProduct.toObject()
+    });
+
+  } catch (error) {
+    console.error('Error toggling stock:', error);
+    res.status(500).json({ 
+      message: 'Failed to update stock status',
+      error: error.message 
+    });
+  }
+};

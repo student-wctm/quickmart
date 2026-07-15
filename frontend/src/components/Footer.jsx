@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { FiPhone, FiMail, FiMapPin, FiClock } from 'react-icons/fi';
 
 const Footer = () => {
@@ -108,9 +109,9 @@ const Footer = () => {
               <p>&copy; 2026 QuickMart. All rights reserved.</p>
             </div>
             <div className="mt-4 md:mt-0 flex justify-center space-x-6 text-sm">
-              <a href="#" className="hover:text-primary transition">Privacy Policy</a>
-              <a href="#" className="hover:text-primary transition">Terms of Service</a>
-              <a href="#" className="hover:text-primary transition">Refund Policy</a>
+              <Link to="/privacy-policy" className="hover:text-primary transition">Privacy Policy</Link>
+              <Link to="/terms-of-service" className="hover:text-primary transition">Terms of Service</Link>
+              <Link to="/refund-policy" className="hover:text-primary transition">Refund Policy</Link>
             </div>
           </div>
         </div>

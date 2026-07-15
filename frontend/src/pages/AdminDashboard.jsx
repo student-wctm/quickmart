@@ -13,7 +13,10 @@ import {
   FiImage,
   FiCheckCircle,
   FiAlertCircle,
-  FiArrowLeft
+  FiArrowLeft,
+  FiTrash2,
+  FiToggleLeft,
+  FiToggleRight
 } from 'react-icons/fi';
 
 const AdminDashboard = () => {
@@ -54,9 +57,48 @@ const AdminDashboard = () => {
   const fetchRecentProducts = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/products`);
-      setRecentProducts(response.data.slice(0, 5));
+      setRecentProducts(response.data.slice(0, 10)); // Show more products for admin
     } catch (err) {
       console.error('Error fetching products:', err);
+    }
+  };
+
+  const handleDeleteProduct = async (productId, productName) => {
+    if (!window.confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_BASE_URL}/api/products/${productId}`);
+      setSuccess(`Product "${productName}" deleted successfully!`);
+      fetchRecentProducts(); // Refresh list
+      
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      setError(err.response?.data?.message || 'Failed to delete product');
+      setTimeout(() => setError(''), 5000);
+    }
+  };
+
+  const handleToggleStock = async (productId, productName, currentStatus) => {
+    const newStatus = !currentStatus;
+    const action = newStatus ? 'In Stock' : 'Out of Stock';
+
+    if (!window.confirm(`Mark "${productName}" as ${action}?`)) {
+      return;
+    }
+
+    try {
+      await axios.patch(`${API_BASE_URL}/api/products/${productId}/stock`);
+      setSuccess(`Product "${productName}" marked as ${action}!`);
+      fetchRecentProducts(); // Refresh list
+      
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error toggling stock:', err);
+      setError(err.response?.data?.message || 'Failed to update stock status');
+      setTimeout(() => setError(''), 5000);
     }
   };
 
@@ -425,7 +467,7 @@ const AdminDashboard = () => {
         {/* Recent Products */}
         {recentProducts.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Products</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Product Inventory</h2>
             <div className="space-y-3">
               {recentProducts.map((product) => (
                 <div key={product._id} className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
@@ -440,11 +482,42 @@ const AdminDashboard = () => {
                       ₹{product.price} • {product.category} • Stock: {product.stock}
                     </p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm ${
+                  
+                  {/* Status Badge */}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
                     {product.inStock ? 'In Stock' : 'Out of Stock'}
                   </span>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    {/* Toggle Stock Button */}
+                    <button
+                      onClick={() => handleToggleStock(product._id, product.name, product.inStock)}
+                      className={`p-2 rounded-lg transition ${
+                        product.inStock 
+                          ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
+                          : 'bg-green-100 text-green-600 hover:bg-green-200'
+                      }`}
+                      title={product.inStock ? 'Mark Out of Stock' : 'Mark In Stock'}
+                    >
+                      {product.inStock ? (
+                        <FiToggleRight className="text-xl" />
+                      ) : (
+                        <FiToggleLeft className="text-xl" />
+                      )}
+                    </button>
+
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => handleDeleteProduct(product._id, product.name)}
+                      className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                      title="Delete Product"
+                    >
+                      <FiTrash2 className="text-xl" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

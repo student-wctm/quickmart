@@ -6,6 +6,8 @@ import {
   createProduct,
   seedProducts,
   addProduct,
+  deleteProduct,
+  toggleProductStock,
 } from '../controllers/productController.js';
 import upload from '../middleware/upload.js';
 
@@ -15,6 +17,7 @@ router.route('/').get(getProducts).post(createProduct);
 router.route('/seed').post(seedProducts);
 router.route('/add').post(upload.single('image'), addProduct);
 router.route('/category/:category').get(getProductsByCategory);
-router.route('/:id').get(getProductById);
+router.route('/:id').get(getProductById).delete(deleteProduct);
+router.route('/:id/stock').patch(toggleProductStock);
 
 export default router;
