@@ -96,6 +96,10 @@ const Checkout = () => {
 
   const handleRazorpaySuccess = async (paymentDetails) => {
     setIsSubmitting(true);
+    
+    console.log('💳 Razorpay payment successful!', paymentDetails);
+    console.log('📦 Creating order with payment details...');
+    
     const orderData = {
       user: {
         name: formData.name,
@@ -117,9 +121,9 @@ const Checkout = () => {
       })),
       totalPrice: cartTotal,
       deliveryFee: DELIVERY_FEE,
-      paymentMethod: 'Razorpay',
+      paymentMethod: 'Online Payment', // Fixed: Changed from 'Razorpay' to match Order model enum
       isPaid: true,
-      paidAt: new Date(),
+      paidAt: new Date().toISOString(), // Fixed: Convert to ISO string for proper serialization
       paymentDetails: {
         razorpay_order_id: paymentDetails.razorpay_order_id,
         razorpay_payment_id: paymentDetails.razorpay_payment_id,
@@ -128,12 +132,15 @@ const Checkout = () => {
     };
 
     try {
+      console.log('📤 Sending order data:', orderData);
       const createdOrder = await createOrder(orderData);
+      console.log('✅ Order created successfully:', createdOrder);
       clearCart();
       navigate(`/order-success/${createdOrder._id}`);
     } catch (err) {
-      console.error('Error creating order after payment:', err);
-      setError('Payment successful but order creation failed. Please contact support.');
+      console.error('❌ Error creating order after payment:', err);
+      console.error('Error response:', err.response?.data);
+      setError('Payment successful but order creation failed. Please contact support with Payment ID: ' + paymentDetails.razorpay_payment_id);
     } finally {
       setIsSubmitting(false);
     }
