@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { DELIVERY_FEE } from '../constants';
 import { createOrder } from '../utils/orderApi';
@@ -16,6 +17,10 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [pincodeError, setPincodeError] = useState('');
+  const [pincodeValid, setPincodeValid] = useState(true);
+  const [allowedPincode, setAllowedPincode] = useState('');
+  const [openMode, setOpenMode] = useState(true);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: '',
@@ -26,6 +31,51 @@ const Checkout = () => {
 
   const cartTotal = getCartTotal();
   const finalTotal = cartTotal + DELIVERY_FEE;
+
+  // Validate pincode whenever it changes
+  const validatePincodeInput = async (pincode) => {
+    if (!pincode) {
+      setPincodeError('');
+      setPincodeValid(true);
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/settings/validate-pincode`, {
+        pincode: pincode
+      });
+
+      if (response.data.valid) {
+        setPincodeValid(true);
+        setPincodeError('');
+        setOpenMode(response.data.openMode || false);
+      } else {
+        setPincodeValid(false);
+        setPincodeError(response.data.message);
+        setAllowedPincode(response.data.allowedPincode || '');
+        setOpenMode(false);
+      }
+    } catch (err) {
+      console.error('Pincode validation error:', err);
+      // If validation API fails, allow order to proceed (fail-safe)
+      setPincodeValid(true);
+      setPincodeError('');
+      setOpenMode(true);
+    }
+  };
+
+  // Handle pincode change with debouncing
+  const handlePincodeChange = (pincode) => {
+    setFormData(prev => ({ ...prev, pincode }));
+    
+    // Clear previous validation after user starts typing
+    if (pincode.length >= 6) {
+      validatePincodeInput(pincode);
+    } else {
+      setPincodeError('');
+      setPincodeValid(true);
+    }
+  };
 
   if (cartItems.length === 0) {
     return (
@@ -168,7 +218,35 @@ const Checkout = () => {
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
               <h2 className="font-bold text-lg mb-4 text-gray-800">Delivery Address</h2>
-              <AddressForm formData={formData} onChange={setFormData} />
+              <AddressForm 
+                formData={formData} 
+                onChange={(updatedData) => {
+                  // Check if pincode changed
+                  if (updatedData.pincode !== formData.pincode) {
+                    handlePincodeChange(updatedData.pincode);
+                  } else {
+                    setFormData(updatedData);
+                  }
+                }} 
+              />
+              
+              {/* Pincode Validation Message */}
+              {pincodeError && (
+                <div className="mt-4 bg-red-50 border-2 border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-start gap-2">
+                  <FiAlertCircle className="text-xl mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold">Delivery Unavailable</p>
+                    <p className="text-sm">{pincodeError}</p>
+                  </div>
+                </div>
+              )}
+              
+              {formData.pincode && pincodeValid && !openMode && (
+                <div className="mt-4 bg-green-50 border-2 border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
+                  <FiCheckCircle className="text-xl" />
+                  <span className="text-sm font-medium">✓ Delivery available in your area</span>
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
@@ -190,18 +268,22 @@ const Checkout = () => {
             {paymentMethod === 'Cash on Delivery' ? (
               <button
                 type="submit"
-                disabled={isSubmitting || !formData.name || !formData.phone || !formData.address || !formData.pincode}
+                disabled={isSubmitting || !formData.name || !formData.phone || !formData.address || !formData.pincode || !pincodeValid}
                 className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-green-700 transition btn-hover disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting
                   ? 'Placing Order...'
+                  : !pincodeValid
+                  ? 'Delivery Not Available'
                   : `Place Order — ₹${finalTotal.toFixed(2)}`}
               </button>
             ) : (
               <div>
-                {(!formData.name || !formData.phone || !formData.address || !formData.pincode) && (
+                {(!formData.name || !formData.phone || !formData.address || !formData.pincode || !pincodeValid) && (
                   <p className="text-sm text-red-600 mb-2">
-                    Please fill in all delivery details before proceeding to payment
+                    {!pincodeValid 
+                      ? pincodeError 
+                      : 'Please fill in all delivery details before proceeding to payment'}
                   </p>
                 )}
                 <RazorpayButton
@@ -212,8 +294,8 @@ const Checkout = () => {
                   customerPhone={formData.phone}
                   onSuccess={handleRazorpaySuccess}
                   onFailure={handleRazorpayFailure}
-                  disabled={!formData.name || !formData.phone || !formData.address || !formData.pincode}
-                  buttonText={`Pay ₹${finalTotal.toFixed(2)} with Razorpay`}
+                  disabled={!formData.name || !formData.phone || !formData.address || !formData.pincode || !pincodeValid}
+                  buttonText={!pincodeValid ? 'Delivery Not Available' : `Pay ₹${finalTotal.toFixed(2)} with Razorpay`}
                   buttonClass="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>

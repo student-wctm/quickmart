@@ -16,7 +16,10 @@ import {
   FiArrowLeft,
   FiTrash2,
   FiToggleLeft,
-  FiToggleRight
+  FiToggleRight,
+  FiSettings,
+  FiMapPin,
+  FiHome
 } from 'react-icons/fi';
 
 const AdminDashboard = () => {
@@ -28,6 +31,15 @@ const AdminDashboard = () => {
   const [recentProducts, setRecentProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState({
+    allowedPincode: '',
+    storeName: 'QuickMart',
+    deliveryFee: 40,
+  });
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSuccess, setSettingsSuccess] = useState('');
+  const [settingsError, setSettingsError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -54,6 +66,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchRecentProducts();
+    fetchSettings();
   }, []);
 
   const fetchRecentProducts = async () => {
@@ -62,6 +75,39 @@ const AdminDashboard = () => {
       setRecentProducts(response.data); // Show ALL products for admin (removed slice)
     } catch (err) {
       console.error('Error fetching products:', err);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/settings`);
+      setSettings({
+        allowedPincode: response.data.allowedPincode || '',
+        storeName: response.data.storeName || 'QuickMart',
+        deliveryFee: response.data.deliveryFee || 40,
+      });
+    } catch (err) {
+      console.error('Error fetching settings:', err);
+    }
+  };
+
+  const handleSettingsUpdate = async (e) => {
+    e.preventDefault();
+    setSettingsLoading(true);
+    setSettingsError('');
+    setSettingsSuccess('');
+
+    try {
+      await axios.put(`${API_BASE_URL}/api/settings`, settings);
+      setSettingsSuccess('Settings updated successfully!');
+      
+      setTimeout(() => setSettingsSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error updating settings:', err);
+      setSettingsError(err.response?.data?.message || 'Failed to update settings');
+      setTimeout(() => setSettingsError(''), 5000);
+    } finally {
+      setSettingsLoading(false);
     }
   };
 
@@ -229,17 +275,162 @@ const AdminDashboard = () => {
                 <FiPackage className="text-primary" />
                 Admin Dashboard
               </h1>
-              <p className="text-gray-600 mt-1">Manage your product inventory</p>
+              <p className="text-gray-600 mt-1">Manage your product inventory and settings</p>
             </div>
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-primary transition"
-            >
-              <FiArrowLeft />
-              Back to Store
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                  showSettings 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <FiSettings />
+                {showSettings ? 'Hide Settings' : 'Settings'}
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-primary transition"
+              >
+                <FiArrowLeft />
+                Back to Store
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Settings Section (Collapsible) */}
+        {showSettings && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <FiSettings className="text-primary" />
+              Store Settings
+            </h2>
+
+            {settingsSuccess && (
+              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+                <FiCheckCircle className="text-xl" />
+                <span>{settingsSuccess}</span>
+              </div>
+            )}
+
+            {settingsError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+                <FiAlertCircle className="text-xl" />
+                <span>{settingsError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSettingsUpdate} className="space-y-6">
+              {/* Delivery Pincode Setting */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
+                  <FiMapPin className="text-blue-600" />
+                  Delivery Location Settings
+                </h3>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Allowed Delivery Pincode (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.allowedPincode}
+                    onChange={(e) => setSettings({...settings, allowedPincode: e.target.value})}
+                    placeholder="Leave BLANK for open mode or enter specific pincode (e.g., 226001)"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div className="bg-white rounded-lg p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800">Open Mode (Recommended for Testing)</p>
+                      <p className="text-sm text-gray-600">
+                        Leave the field <strong>BLANK</strong> → Anyone from anywhere can place orders without restrictions
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800">Restricted Mode</p>
+                      <p className="text-sm text-gray-600">
+                        Enter a specific pincode → Only customers with matching pincode can checkout
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-2 text-sm">
+                  <FiAlertCircle className="text-orange-600" />
+                  <span className="text-gray-600">
+                    Current Mode: <strong className={settings.allowedPincode ? 'text-blue-600' : 'text-green-600'}>
+                      {settings.allowedPincode ? `Restricted to ${settings.allowedPincode}` : 'Open (No Restrictions)'}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Store Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FiHome className="inline mr-2" />
+                  Store Name
+                </label>
+                <input
+                  type="text"
+                  value={settings.storeName}
+                  onChange={(e) => setSettings({...settings, storeName: e.target.value})}
+                  placeholder="QuickMart"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+
+              {/* Delivery Fee */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FiDollarSign className="inline mr-2" />
+                  Delivery Fee (₹)
+                </label>
+                <input
+                  type="number"
+                  value={settings.deliveryFee}
+                  onChange={(e) => setSettings({...settings, deliveryFee: parseFloat(e.target.value)})}
+                  placeholder="40"
+                  min="0"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={settingsLoading}
+                className="w-full bg-primary text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {settingsLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Saving Settings...
+                  </>
+                ) : (
+                  <>
+                    <FiCheckCircle />
+                    Save Settings
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Success/Error Messages */}
         {success && (
