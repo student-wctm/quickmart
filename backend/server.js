@@ -32,16 +32,21 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
+    'http://localhost:5000',
+    'https://quickmart-orpin.vercel.app',  // Your production frontend
+    'https://quickmart-dbtlqj3j8-beeta1.vercel.app',  // Your alternate frontend
     'https://fragment-unsubtle-simmering.ngrok-free.dev',
     /\.ngrok-free\.dev$/,
     /\.ngrok\.io$/,
     /\.vercel\.app$/,  // Allow all Vercel preview and production deployments
-    'https://quickmart.vercel.app',  // Production frontend
-    'https://quickmart-student-wctm.vercel.app',  // Alternate Vercel URL
+    'https://quickmart.vercel.app',
+    'https://quickmart-student-wctm.vercel.app',
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-JSON'],
+  maxAge: 86400 // 24 hours
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
