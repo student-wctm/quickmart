@@ -1,67 +1,44 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
-import { sendOrderNotification } from '../services/telegramService.js';
+import { sendWhatsAppOrderNotification, testWhatsAppNotification } from '../services/whatsappService.js';
 
-// @desc    Test Telegram notification (for debugging)
-// @route   GET /api/orders/test-telegram
+// @desc    Test WhatsApp notification (for debugging)
+// @route   GET /api/orders/test-whatsapp
 // @access  Public
-export const testTelegramNotification = async (req, res) => {
+export const testWhatsAppNotificationEndpoint = async (req, res) => {
   try {
-    console.log('🧪 Testing Telegram notification...');
+    console.log('🧪 Testing WhatsApp notification...');
     
-    // Create a mock order for testing
-    const mockOrder = {
-      _id: 'TEST-ORDER-' + Date.now(),
-      user: {
-        name: 'Test User',
-        email: 'test@example.com',
-        phone: '+1234567890',
-        address: {
-          street: '123 Test Street, Test City',
-          pincode: '123456'
-        }
-      },
-      orderItems: [
-        {
-          name: 'Test Product',
-          quantity: 2,
-          price: 100
-        }
-      ],
-      totalPrice: 200,
-      deliveryFee: 40,
-      finalAmount: 240,
-      paymentMethod: 'Cash on Delivery',
-      status: 'Pending'
-    };
-
-    const result = await sendOrderNotification(mockOrder);
+    const result = await testWhatsAppNotification();
     
     if (result.success) {
       res.json({ 
         success: true, 
-        message: 'Test notification sent successfully! Check your Telegram chat.',
-        details: result
+        message: '✅ Test WhatsApp notification sent successfully! Check your WhatsApp.',
+        messageSid: result.messageSid,
+        status: result.status
       });
     } else {
       res.status(500).json({ 
         success: false, 
-        message: 'Failed to send test notification',
+        message: '❌ Failed to send test WhatsApp notification',
         reason: result.reason,
-        details: result.details || {},
-        troubleshooting: {
-          'not_configured': 'Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Vercel environment variables',
-          'Unauthorized': 'Invalid BOT_TOKEN - Get a new one from @BotFather on Telegram',
-          'chat not found': 'Invalid CHAT_ID - Get yours from @userinfobot or @raw_data_bot on Telegram',
-          'bot was blocked': 'Unblock the bot in your Telegram chat and try again'
+        error: result.message,
+        troubleshooting: result.troubleshooting || {
+          'missing_credentials': 'Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Vercel environment variables',
+          'missing_phone_numbers': 'Set TWILIO_WHATSAPP_NUMBER (like whatsapp:+14155238886) and MY_WHATSAPP_NUMBER (like whatsapp:+919876543210)',
+          '20003': 'Invalid Twilio credentials - Check your Account SID and Auth Token',
+          '21608': 'Phone number not verified in Twilio Sandbox - Join the sandbox first',
+          '21211': 'Invalid recipient phone number format',
+          '21212': 'Invalid sender phone number - Must be your Twilio WhatsApp Sandbox number'
         }
       });
     }
   } catch (error) {
-    console.error('Test notification error:', error);
+    console.error('Test WhatsApp notification error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Server error during test',
+      message: 'Server error during WhatsApp test',
       error: error.message 
     });
   }
@@ -104,20 +81,21 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    // Send Telegram notification (non-blocking, with error handling)
-    sendOrderNotification(createdOrder)
+    // Send WhatsApp notification (non-blocking, with error handling)
+    sendWhatsAppOrderNotification(createdOrder)
       .then((result) => {
         if (result.success) {
-          console.log('✅ Telegram notification sent successfully');
+          console.log('✅ WhatsApp notification sent successfully');
         } else {
-          console.warn('⚠️  Telegram notification skipped or failed:', result.reason);
+          console.warn('⚠️  WhatsApp notification skipped or failed:', result.reason);
+          console.warn('⚠️  Details:', result.message);
         }
       })
       .catch((err) => {
-        console.error('❌ Telegram notification error (non-critical):', err.message);
+        console.error('❌ WhatsApp notification error (non-critical):', err.message);
       });
 
-    // Always return success response even if Telegram fails
+    // Always return success response even if WhatsApp fails
     res.status(201).json(createdOrder);
   } catch (error) {
     console.error('Order creation error:', error);

@@ -4,13 +4,13 @@ import {
   getOrderById,
   getOrders,
   updateOrderStatus,
-  testTelegramNotification,
+  testWhatsAppNotificationEndpoint,
 } from '../controllers/orderController.js';
 
 const router = express.Router();
 
 // Test route - should be placed BEFORE parameterized routes
-router.get('/test-telegram', testTelegramNotification);
+router.get('/test-whatsapp', testWhatsAppNotificationEndpoint);
 
 router.route('/').post(createOrder).get(getOrders);
 router.route('/:id').get(getOrderById);
