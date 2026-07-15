@@ -91,6 +91,8 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
     if (isOpen && !customerPosition) {
       // Set default position near shop
       setCustomerPosition(defaultShopLocation);
+      // Fetch address for default position
+      reverseGeocode(defaultShopLocation[0], defaultShopLocation[1]);
     }
   }, [isOpen]);
 
@@ -146,14 +148,22 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
   };
 
   const handleConfirm = () => {
-    if (customerPosition && address) {
-      onLocationConfirm({
+    console.log('🔘 Confirm button clicked');
+    console.log('📍 Customer position:', customerPosition);
+    console.log('📬 Address:', address);
+    
+    if (customerPosition) {
+      const locationData = {
         latitude: customerPosition[0],
         longitude: customerPosition[1],
-        address: address,
-        pincode: extractPincode(address)
-      });
+        address: address || 'Location selected on map',
+        pincode: address ? extractPincode(address) : ''
+      };
+      
+      console.log('✅ Sending location data:', locationData);
+      onLocationConfirm(locationData);
     } else {
+      console.log('❌ No customer position');
       alert("Please select a location on the map");
     }
   };
@@ -304,10 +314,10 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!customerPosition || !address}
+            disabled={!customerPosition || loading}
             className="flex-1 px-6 py-3 bg-primary text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Confirm Location
+            {loading ? 'Loading address...' : 'Confirm Location'}
           </button>
         </div>
 
