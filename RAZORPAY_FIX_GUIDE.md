@@ -83,8 +83,8 @@ Added detailed console logs to help debug any future issues:
 
 Your `.env` file has test credentials:
 ```env
-RAZORPAY_KEY_ID=rzp_test_TCERL7k0LC51DU
-RAZORPAY_KEY_SECRET=AMj31VKTIn4eZXX7ZRSw1Gza
+RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXXXX
+RAZORPAY_KEY_SECRET=XXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### **Test Payment Methods:**
@@ -111,16 +111,16 @@ RAZORPAY_KEY_SECRET=AMj31VKTIn4eZXX7ZRSw1Gza
 
 ### **Backend (.env):**
 ```env
-RAZORPAY_KEY_ID=rzp_test_TCERL7k0LC51DU
-RAZORPAY_KEY_SECRET=AMj31VKTIn4eZXX7ZRSw1Gza
+RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXXXX
+RAZORPAY_KEY_SECRET=XXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### **Vercel Backend Environment Variables:**
 Make sure these are set at:
 https://vercel.com/student-wctm/quickmart-backend-six/settings/environment-variables
 
-1. `RAZORPAY_KEY_ID` = `rzp_test_TCERL7k0LC51DU`
-2. `RAZORPAY_KEY_SECRET` = `AMj31VKTIn4eZXX7ZRSw1Gza`
+1. `RAZORPAY_KEY_ID` = `rzp_test_XXXXXXXXXXXXXXXX`
+2. `RAZORPAY_KEY_SECRET` = `XXXXXXXXXXXXXXXXXXXXXXXX`
 
 *(These should already be set from your previous setup)*
 

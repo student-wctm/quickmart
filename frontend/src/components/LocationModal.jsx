@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import { FiX, FiNavigation, FiMapPin, FiSearch } from 'react-icons/fi';
-import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix for default marker icons in Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+// Import Leaflet CSS
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icons in Leaflet - CRITICAL FIX
+if (typeof window !== 'undefined') {
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  });
+}
 
 // Custom marker icons
 const shopIcon = new L.Icon({
@@ -83,16 +87,26 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [mapKey, setMapKey] = useState(0); // Force map re-render
 
   // Default shop location (you can configure this in settings)
   const defaultShopLocation = shopLocation || [26.8467, 80.9462]; // Example: Lucknow coordinates
 
   useEffect(() => {
-    if (isOpen && !customerPosition) {
+    if (isOpen) {
+      console.log('🗺️ Location modal opened');
       // Set default position near shop
-      setCustomerPosition(defaultShopLocation);
+      const initialPosition = defaultShopLocation;
+      setCustomerPosition(initialPosition);
       // Fetch address for default position
-      reverseGeocode(defaultShopLocation[0], defaultShopLocation[1]);
+      reverseGeocode(initialPosition[0], initialPosition[1]);
+      // Force map to re-render
+      setMapKey(prev => prev + 1);
+    } else {
+      // Reset state when closing
+      setSearchQuery('');
+      setAddress('');
+      setCustomerPosition(null);
     }
   }, [isOpen]);
 
@@ -147,24 +161,33 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
     reverseGeocode(lat, lng);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     console.log('🔘 Confirm button clicked');
     console.log('📍 Customer position:', customerPosition);
     console.log('📬 Address:', address);
     
-    if (customerPosition) {
-      const locationData = {
-        latitude: customerPosition[0],
-        longitude: customerPosition[1],
-        address: address || 'Location selected on map',
-        pincode: address ? extractPincode(address) : ''
-      };
-      
-      console.log('✅ Sending location data:', locationData);
-      onLocationConfirm(locationData);
-    } else {
+    if (!customerPosition) {
       console.log('❌ No customer position');
       alert("Please select a location on the map");
+      return;
+    }
+    
+    const locationData = {
+      latitude: customerPosition[0],
+      longitude: customerPosition[1],
+      address: address || 'Location selected on map',
+      pincode: address ? extractPincode(address) : ''
+    };
+    
+    console.log('✅ Sending location data:', locationData);
+    
+    try {
+      // Call the parent callback
+      await onLocationConfirm(locationData);
+      console.log('✅ Location confirmed successfully');
+    } catch (error) {
+      console.error('❌ Error in location confirmation:', error);
+      alert('Error confirming location. Please try again.');
     }
   };
 
@@ -253,17 +276,20 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
         </div>
 
         {/* Map */}
-        <div className="flex-1 relative">
-          {customerPosition && (
+        <div className="flex-1 relative" style={{ minHeight: '400px' }}>
+          {customerPosition ? (
             <MapContainer
+              key={mapKey}
               center={customerPosition}
               zoom={15}
-              style={{ height: '100%', width: '100%' }}
+              style={{ height: '100%', width: '100%', minHeight: '400px' }}
               scrollWheelZoom={true}
+              zoomControl={true}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxZoom={19}
               />
               
               {/* Shop Location Marker */}
@@ -283,11 +309,18 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
                 onLocationSelect={handleLocationSelect}
               />
             </MapContainer>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-2"></div>
+                <p className="text-gray-600">Initializing map...</p>
+              </div>
+            </div>
           )}
           
           {/* Loading Overlay */}
           {loading && (
-            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-[1000]">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-2"></div>
                 <p className="text-gray-600">Loading location...</p>
@@ -307,17 +340,26 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
         {/* Footer Actions */}
         <div className="p-4 border-t border-gray-200 flex gap-3">
           <button
+            type="button"
             onClick={onClose}
-            className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+            className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleConfirm}
             disabled={!customerPosition || loading}
-            className="flex-1 px-6 py-3 bg-primary text-white rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-4 bg-primary text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
           >
-            {loading ? 'Loading address...' : 'Confirm Location'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Loading...
+              </span>
+            ) : (
+              'Confirm Location'
+            )}
           </button>
         </div>
 
