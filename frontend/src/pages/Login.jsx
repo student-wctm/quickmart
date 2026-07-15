@@ -11,7 +11,8 @@ import {
 
 const Login = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); // 1: Enter phone/email, 2: Enter OTP
+  const [step, setStep] = useState(1); // 1: Choose method, 2: Enter contact, 3: Enter OTP
+  const [verificationType, setVerificationType] = useState(''); // 'phone' or 'email'
   const [contactInfo, setContactInfo] = useState('');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -23,17 +24,29 @@ const Login = () => {
     return Math.floor(1000 + Math.random() * 9000).toString();
   };
 
+  const handleSelectMethod = (method) => {
+    setVerificationType(method);
+    setStep(2);
+    setError('');
+  };
+
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Validate phone/email
-    const phoneRegex = /^[6-9]\d{9}$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!phoneRegex.test(contactInfo) && !emailRegex.test(contactInfo)) {
-      setError('Please enter a valid 10-digit phone number or email address');
-      return;
+    // Validate based on selected method
+    if (verificationType === 'phone') {
+      const phoneRegex = /^[6-9]\d{9}$/;
+      if (!phoneRegex.test(contactInfo)) {
+        setError('Please enter a valid 10-digit phone number (starts with 6-9)');
+        return;
+      }
+    } else if (verificationType === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(contactInfo)) {
+        setError('Please enter a valid email address');
+        return;
+      }
     }
 
     setLoading(true);
@@ -43,8 +56,9 @@ const Login = () => {
       const mockOTP = generateOTP();
       setGeneratedOTP(mockOTP);
       console.log('🔐 Mock OTP Generated:', mockOTP); // For testing
-      alert(`Demo OTP: ${mockOTP}\n(In production, this will be sent via SMS/Email)`);
-      setStep(2);
+      const channel = verificationType === 'email' ? 'Email' : 'SMS';
+      alert(`Demo OTP: ${mockOTP}\n(In production, this will be sent via ${channel})`);
+      setStep(3);
       setLoading(false);
     }, 1500);
   };
@@ -112,7 +126,20 @@ const Login = () => {
     setGeneratedOTP(newOTP);
     setOtp(['', '', '', '']);
     console.log('🔐 New OTP Generated:', newOTP);
-    alert(`New Demo OTP: ${newOTP}\n(In production, this will be sent via SMS/Email)`);
+    const channel = verificationType === 'email' ? 'Email' : 'SMS';
+    alert(`New Demo OTP: ${newOTP}\n(In production, this will be sent via ${channel})`);
+    setError('');
+  };
+
+  const handleGoBack = () => {
+    if (step === 3) {
+      setStep(2);
+      setOtp(['', '', '', '']);
+    } else if (step === 2) {
+      setStep(1);
+      setContactInfo('');
+      setVerificationType('');
+    }
     setError('');
   };
 
@@ -215,26 +242,93 @@ const Login = () => {
           <div className="bg-gray-800 rounded-2xl p-8 shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
             <p className="text-gray-400 mb-8">
-              {step === 1 ? 'Enter your details to get started' : 'Enter the OTP sent to your device'}
+              {step === 1 ? 'Choose your verification method' : 
+               step === 2 ? 'Enter your details to get started' : 
+               'Enter the OTP sent to your device'}
             </p>
 
             {step === 1 ? (
-              // Step 1: Phone/Email Input
+              // Step 1: Choose Verification Method
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-300 mb-4">Select verification method:</h3>
+                
+                {/* Email Option */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMethod('email')}
+                  className="w-full bg-gray-700 hover:bg-gray-600 text-white p-6 rounded-lg transition flex items-center gap-4 group"
+                >
+                  <div className="bg-primary p-4 rounded-full group-hover:scale-110 transition">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="text-left flex-1">
+                    <h4 className="text-xl font-bold mb-1">Email OTP</h4>
+                    <p className="text-gray-400 text-sm">Receive verification code via email</p>
+                  </div>
+                  <FiArrowRight className="text-2xl text-gray-400 group-hover:text-primary transition" />
+                </button>
+
+                {/* Phone Option */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMethod('phone')}
+                  className="w-full bg-gray-700 hover:bg-gray-600 text-white p-6 rounded-lg transition flex items-center gap-4 group"
+                >
+                  <div className="bg-primary p-4 rounded-full group-hover:scale-110 transition">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="text-left flex-1">
+                    <h4 className="text-xl font-bold mb-1">Phone OTP</h4>
+                    <p className="text-gray-400 text-sm">Receive verification code via SMS</p>
+                  </div>
+                  <FiArrowRight className="text-2xl text-gray-400 group-hover:text-primary transition" />
+                </button>
+
+                <p className="text-gray-500 text-xs mt-6 text-center">
+                  By continuing, you agree to our{' '}
+                  <span className="text-primary cursor-pointer hover:underline">Terms of Service</span>
+                  {' '}and{' '}
+                  <span className="text-primary cursor-pointer hover:underline">Privacy Policy</span>
+                </p>
+              </div>
+            ) : step === 2 ? (
+              // Step 2: Enter Email/Phone
               <form onSubmit={handleSendOTP}>
                 <div className="mb-6">
                   <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Phone Number / Email ID
+                    {verificationType === 'email' ? (
+                      <>
+                        <svg className="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Email Address
+                      </>
+                    ) : (
+                      <>
+                        <svg className="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Phone Number
+                      </>
+                    )}
                   </label>
                   <input
-                    type="text"
+                    type={verificationType === 'email' ? 'email' : 'tel'}
                     value={contactInfo}
                     onChange={(e) => setContactInfo(e.target.value)}
-                    placeholder="Enter 10-digit phone or email"
+                    placeholder={verificationType === 'email' ? 'your@email.com' : '9876543210'}
                     required
+                    autoFocus
                     className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                   <p className="text-gray-500 text-xs mt-2">
-                    We'll send you a One-Time Password (OTP)
+                    {verificationType === 'email' 
+                      ? 'We\'ll send a 4-digit OTP to your email' 
+                      : 'We\'ll send a 4-digit OTP to your phone'}
                   </p>
                 </div>
 
@@ -247,7 +341,7 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-4"
                 >
                   {loading ? (
                     <>
@@ -256,21 +350,22 @@ const Login = () => {
                     </>
                   ) : (
                     <>
-                      Continue
+                      Send OTP
                       <FiArrowRight />
                     </>
                   )}
                 </button>
 
-                <p className="text-gray-500 text-xs mt-4 text-center">
-                  By continuing, you agree to our{' '}
-                  <span className="text-primary cursor-pointer hover:underline">Terms of Service</span>
-                  {' '}and{' '}
-                  <span className="text-primary cursor-pointer hover:underline">Privacy Policy</span>
-                </p>
+                <button
+                  type="button"
+                  onClick={handleGoBack}
+                  className="w-full text-gray-400 hover:text-white transition text-center text-sm"
+                >
+                  ← Change verification method
+                </button>
               </form>
             ) : (
-              // Step 2: OTP Verification
+              // Step 3: OTP Verification
               <form onSubmit={handleVerifyOTP}>
                 <div className="mb-6">
                   <label className="block text-gray-300 text-sm font-medium mb-4">
@@ -290,9 +385,17 @@ const Login = () => {
                       />
                     ))}
                   </div>
-                  <p className="text-gray-400 text-sm text-center">
-                    OTP sent to <span className="text-primary font-medium">{contactInfo}</span>
-                  </p>
+                  <div className="text-center">
+                    <p className="text-gray-400 text-sm">
+                      OTP sent to {verificationType === 'email' ? 'email:' : 'phone:'}
+                    </p>
+                    <p className="text-primary font-medium text-lg mt-1">{contactInfo}</p>
+                    <p className="text-gray-500 text-xs mt-2">
+                      {verificationType === 'email' 
+                        ? 'Check your inbox and spam folder' 
+                        : 'Check your SMS messages'}
+                    </p>
+                  </div>
                 </div>
 
                 {error && (
@@ -322,14 +425,10 @@ const Login = () => {
                 <div className="flex items-center justify-between text-sm">
                   <button
                     type="button"
-                    onClick={() => {
-                      setStep(1);
-                      setOtp(['', '', '', '']);
-                      setError('');
-                    }}
+                    onClick={handleGoBack}
                     className="text-gray-400 hover:text-white transition"
                   >
-                    ← Change Number
+                    ← Change {verificationType === 'email' ? 'email' : 'number'}
                   </button>
                   <button
                     type="button"
