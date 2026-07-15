@@ -26,6 +26,8 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [recentProducts, setRecentProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -57,7 +59,7 @@ const AdminDashboard = () => {
   const fetchRecentProducts = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/products`);
-      setRecentProducts(response.data.slice(0, 10)); // Show more products for admin
+      setRecentProducts(response.data); // Show ALL products for admin (removed slice)
     } catch (err) {
       console.error('Error fetching products:', err);
     }
@@ -467,59 +469,109 @@ const AdminDashboard = () => {
         {/* Recent Products */}
         {recentProducts.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Product Inventory</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Product Inventory</h2>
+                <p className="text-sm text-gray-600 mt-1">Total Products: {recentProducts.length}</p>
+              </div>
+            </div>
+
+            {/* Search and Filter */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Search Bar */}
+              <input
+                type="text"
+                placeholder="Search products by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+
+              {/* Category Filter */}
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="All">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Products List */}
             <div className="space-y-3">
-              {recentProducts.map((product) => (
-                <div key={product._id} className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-16 h-16 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800">{product.name}</h3>
-                    <p className="text-sm text-gray-600">
-                      ₹{product.price} • {product.category} • Stock: {product.stock}
-                    </p>
-                  </div>
-                  
-                  {/* Status Badge */}
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {product.inStock ? 'In Stock' : 'Out of Stock'}
-                  </span>
+              {recentProducts
+                .filter(product => {
+                  const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+                  const matchesCategory = filterCategory === 'All' || product.category === filterCategory;
+                  return matchesSearch && matchesCategory;
+                })
+                .map((product) => (
+                  <div key={product._id} className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800">{product.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        ₹{product.price} • {product.category} • Stock: {product.stock}
+                      </p>
+                    </div>
+                    
+                    {/* Status Badge */}
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {product.inStock ? 'In Stock' : 'Out of Stock'}
+                    </span>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    {/* Toggle Stock Button */}
-                    <button
-                      onClick={() => handleToggleStock(product._id, product.name, product.inStock)}
-                      className={`p-2 rounded-lg transition ${
-                        product.inStock 
-                          ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
-                          : 'bg-green-100 text-green-600 hover:bg-green-200'
-                      }`}
-                      title={product.inStock ? 'Mark Out of Stock' : 'Mark In Stock'}
-                    >
-                      {product.inStock ? (
-                        <FiToggleRight className="text-xl" />
-                      ) : (
-                        <FiToggleLeft className="text-xl" />
-                      )}
-                    </button>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      {/* Toggle Stock Button */}
+                      <button
+                        onClick={() => handleToggleStock(product._id, product.name, product.inStock)}
+                        className={`p-2 rounded-lg transition ${
+                          product.inStock 
+                            ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
+                            : 'bg-green-100 text-green-600 hover:bg-green-200'
+                        }`}
+                        title={product.inStock ? 'Mark Out of Stock' : 'Mark In Stock'}
+                      >
+                        {product.inStock ? (
+                          <FiToggleRight className="text-xl" />
+                        ) : (
+                          <FiToggleLeft className="text-xl" />
+                        )}
+                      </button>
 
-                    {/* Delete Button */}
-                    <button
-                      onClick={() => handleDeleteProduct(product._id, product.name)}
-                      className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                      title="Delete Product"
-                    >
-                      <FiTrash2 className="text-xl" />
-                    </button>
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteProduct(product._id, product.name)}
+                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                        title="Delete Product"
+                      >
+                        <FiTrash2 className="text-xl" />
+                      </button>
+                    </div>
                   </div>
+                ))}
+              
+              {/* No Results Message */}
+              {recentProducts.filter(product => {
+                const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesCategory = filterCategory === 'All' || product.category === filterCategory;
+                return matchesSearch && matchesCategory;
+              }).length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <FiPackage className="text-5xl mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No products found</p>
+                  <p className="text-sm">Try adjusting your search or filter</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}
