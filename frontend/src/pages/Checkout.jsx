@@ -89,25 +89,35 @@ const Checkout = () => {
   const handleLocationConfirm = async (locationData) => {
     const { latitude, longitude, address, pincode } = locationData;
     
+    console.log('📍 Location confirm called with:', { latitude, longitude, address, pincode });
+    
     setSelectedLocation({latitude, longitude});
+    
+    // CRITICAL: Always update form data first (fail-safe)
+    const updatedFormData = {
+      ...formData,
+      address: address,
+      pincode: pincode || formData.pincode,
+      latitude,
+      longitude
+    };
     
     // Validate location with backend
     try {
+      console.log('🔍 Validating location with backend...');
       const response = await axios.post(`${API_BASE_URL}/api/settings/validate-location`, {
         latitude,
         longitude
+      }, {
+        timeout: 5000 // 5 second timeout
       });
 
-      if (response.data.valid) {
-        // Location is valid - update form
-        setFormData(prev => ({
-          ...prev,
-          address: address,
-          pincode: pincode || prev.pincode,
-          latitude,
-          longitude
-        }));
-        
+      console.log('✅ Backend response:', response.data);
+
+      // Check if location is valid OR if fail-safe mode
+      if (response.data.valid || response.data.failSafe) {
+        // Location is valid or validation bypassed - update form
+        setFormData(updatedFormData);
         setShowLocationModal(false);
         setPincodeValid(true);
         setPincodeError('');
@@ -116,22 +126,39 @@ const Checkout = () => {
         if (pincode) {
           validatePincodeInput(pincode);
         }
+        
+        console.log('✅ Location accepted and form updated');
       } else {
         // Location is outside delivery zone
+        console.warn('⚠️ Location outside delivery zone');
         setShowLocationModal(false);
         setShowLocationUnavailable(true);
       }
     } catch (error) {
-      console.error('Location validation error:', error);
-      // Fail-safe: allow location if validation fails
-      setFormData(prev => ({
-        ...prev,
-        address: address,
-        pincode: pincode || prev.pincode,
-        latitude,
-        longitude
-      }));
+      console.error('❌ Location validation error:', error);
+      
+      // FAIL-SAFE: If backend validation fails for ANY reason, accept the location
+      // This ensures users are NEVER blocked from placing orders
+      console.log('✅ FAIL-SAFE: Accepting location despite validation error');
+      
+      setFormData(updatedFormData);
       setShowLocationModal(false);
+      setPincodeValid(true);
+      setPincodeError('');
+      
+      // Validate pincode if extracted
+      if (pincode) {
+        validatePincodeInput(pincode);
+      }
+      
+      // Optional: Show a warning but don't block
+      if (error.code === 'ECONNABORTED') {
+        console.warn('⚠️ Validation timeout - proceeding anyway');
+      } else if (error.response) {
+        console.warn('⚠️ Backend error:', error.response.status, error.response.data);
+      } else {
+        console.warn('⚠️ Network error:', error.message);
+      }
     }
   };
 

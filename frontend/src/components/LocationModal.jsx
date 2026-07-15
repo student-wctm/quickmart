@@ -182,12 +182,27 @@ const LocationModal = ({ isOpen, onClose, onLocationConfirm, shopLocation }) => 
     console.log('✅ Sending location data:', locationData);
     
     try {
-      // Call the parent callback
-      await onLocationConfirm(locationData);
+      // Call the parent callback with timeout protection
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Confirmation timeout')), 10000)
+      );
+      
+      await Promise.race([
+        onLocationConfirm(locationData),
+        timeoutPromise
+      ]);
+      
       console.log('✅ Location confirmed successfully');
     } catch (error) {
       console.error('❌ Error in location confirmation:', error);
-      alert('Error confirming location. Please try again.');
+      
+      // Don't show alert for timeout - the fail-safe will handle it
+      if (error.message !== 'Confirmation timeout') {
+        alert('Error confirming location. The location will be saved anyway.');
+      }
+      
+      // Close modal even on error - the parent has fail-safe logic
+      onClose();
     }
   };
 
