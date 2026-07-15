@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import useRazorpay from '../hooks/useRazorpay';
+import API_BASE_URL from '../config/api';
 
 const RazorpayButton = ({
   amount,
@@ -37,11 +38,14 @@ const RazorpayButton = ({
 
     try {
       // Step 1: Create Razorpay order on backend
-      const { data } = await axios.post('/api/payments/create-order', {
+      console.log('🔍 Creating Razorpay order with API_BASE_URL:', API_BASE_URL);
+      const { data } = await axios.post(`${API_BASE_URL}/api/payments/create-order`, {
         amount: amount,
         currency: currency,
         receipt: `order_${orderId || Date.now()}`,
       });
+
+      console.log('✅ Razorpay order created:', data);
 
       if (!data.success) {
         throw new Error('Failed to create payment order');
@@ -58,12 +62,15 @@ const RazorpayButton = ({
         handler: async function (response) {
           // Step 3: Verify payment on backend
           try {
-            const verifyData = await axios.post('/api/payments/verify', {
+            console.log('🔍 Verifying payment...');
+            const verifyData = await axios.post(`${API_BASE_URL}/api/payments/verify`, {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               orderId: orderId,
             });
+
+            console.log('✅ Payment verified:', verifyData.data);
 
             if (verifyData.data.success) {
               if (onSuccess) {
@@ -77,7 +84,7 @@ const RazorpayButton = ({
               throw new Error('Payment verification failed');
             }
           } catch (error) {
-            console.error('Payment verification error:', error);
+            console.error('❌ Payment verification error:', error);
             if (onFailure) {
               onFailure(error);
             }
@@ -109,12 +116,14 @@ const RazorpayButton = ({
       razorpayInstance.open();
       setLoading(false);
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error('❌ Payment error:', error);
+      console.error('Error details:', error.response?.data);
       setLoading(false);
       if (onFailure) {
         onFailure(error);
       }
-      alert('Payment failed. Please try again.');
+      const errorMessage = error.response?.data?.message || error.message || 'Payment failed';
+      alert(`Payment failed: ${errorMessage}`);
     }
   };
 
