@@ -1,0 +1,10 @@
+version: "2"
+authtoken: YOUR_NGROK_AUTHTOKEN_HERE
+
+tunnels:
+  frontend:
+    proto: http
+    addr: 5173
+    domain: fragment-unsubtle-simmering.ngrok-free.dev
+    inspect: true
+    host_header: "fragment-unsubtle-simmering.ngrok-free.dev"

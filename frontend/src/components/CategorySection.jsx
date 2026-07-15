@@ -1,7 +1,7 @@
 import React from 'react';
 import ProductCard from './ProductCard';
 
-const CategorySection = ({ category, products = [], onSeeAll }) => {
+const CategorySection = ({ category, products = [], onSeeAll, onLoginRequired }) => {
   if (!Array.isArray(products) || products.length === 0) return null;
 
   const visibleProducts = products.slice(0, 5);
@@ -32,6 +32,7 @@ const CategorySection = ({ category, products = [], onSeeAll }) => {
           <ProductCard
             key={product?._id || `${category}-${product?.name}`}
             product={product}
+            onLoginRequired={onLoginRequired}
           />
         ))}
       </div>

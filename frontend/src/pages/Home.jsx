@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 import Banner from '../components/Banner';
@@ -8,6 +8,7 @@ import ProductCard from '../components/ProductCard';
 
 const Home = () => {
   const routeLocation = useLocation();
+  const { onLoginRequired } = useOutletContext();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -153,7 +154,7 @@ const Home = () => {
                   <p className="text-gray-600 mb-4">Found {filteredProducts.length} product(s)</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                     {filteredProducts.map((product) => (
-                      <ProductCard key={product._id} product={product} />
+                      <ProductCard key={product._id} product={product} onLoginRequired={onLoginRequired} />
                     ))}
                   </div>
                 </>
@@ -181,6 +182,7 @@ const Home = () => {
                   category={category}
                   products={categoryProducts}
                   onSeeAll={handleSeeAll}
+                  onLoginRequired={onLoginRequired}
                 />
               ))
             ) : (
@@ -205,7 +207,7 @@ const Home = () => {
               {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                   {filteredProducts.map((product) => (
-                    <ProductCard key={product._id} product={product} />
+                    <ProductCard key={product._id} product={product} onLoginRequired={onLoginRequired} />
                   ))}
                 </div>
               ) : (

@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiShoppingCart, FiMapPin, FiSearch, FiUser, FiChevronDown } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import AccountDropdown from './AccountDropdown';
 
-const Navbar = ({ onSearch, user, onLoginClick, location, onLocationClick }) => {
+const Navbar = ({ onSearch, onLoginClick, location, onLocationClick, onEditProfile }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { getCartCount } = useCart();
+  const { isAuthenticated, user } = useAuth();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -60,11 +63,8 @@ const Navbar = ({ onSearch, user, onLoginClick, location, onLocationClick }) => 
           </form>
 
           <div className="flex items-center space-x-3 md:space-x-4 lg:space-x-6 flex-shrink-0">
-            {user ? (
-              <div className="hidden md:flex items-center space-x-2 bg-green-50 px-3 md:px-4 py-2 rounded-lg">
-                <FiUser className="text-primary" />
-                <span className="text-sm font-medium text-primary truncate max-w-[100px]">{user.name}</span>
-              </div>
+            {isAuthenticated && user ? (
+              <AccountDropdown onEditProfile={onEditProfile} />
             ) : (
               <button
                 onClick={onLoginClick}

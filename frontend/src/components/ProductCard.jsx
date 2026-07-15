@@ -1,9 +1,11 @@
 import React from 'react';
 import { FiPlus, FiMinus } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, onLoginRequired }) => {
   const { getItemQuantity, addToCart, increaseQuantity, decreaseQuantity } = useCart();
+  const { isAuthenticated } = useAuth();
   const quantity = getItemQuantity(product._id);
 
   const discountedPrice = product.discount
@@ -11,7 +13,34 @@ const ProductCard = ({ product }) => {
     : product.price;
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      // Show login modal if not authenticated
+      if (onLoginRequired) {
+        onLoginRequired();
+      }
+      return;
+    }
     addToCart(product);
+  };
+
+  const handleIncrease = () => {
+    if (!isAuthenticated) {
+      if (onLoginRequired) {
+        onLoginRequired();
+      }
+      return;
+    }
+    increaseQuantity(product._id);
+  };
+
+  const handleDecrease = () => {
+    if (!isAuthenticated) {
+      if (onLoginRequired) {
+        onLoginRequired();
+      }
+      return;
+    }
+    decreaseQuantity(product._id);
   };
 
   return (
@@ -63,14 +92,14 @@ const ProductCard = ({ product }) => {
             ) : (
               <div className="flex items-center justify-between bg-primary text-white rounded-lg overflow-hidden">
                 <button
-                  onClick={() => decreaseQuantity(product._id)}
+                  onClick={handleDecrease}
                   className="px-4 py-2 hover:bg-green-700 transition"
                 >
                   <FiMinus className="text-xl" />
                 </button>
                 <span className="px-4 py-2 font-bold">{quantity}</span>
                 <button
-                  onClick={() => increaseQuantity(product._id)}
+                  onClick={handleIncrease}
                   className="px-4 py-2 hover:bg-green-700 transition"
                 >
                   <FiPlus className="text-xl" />
