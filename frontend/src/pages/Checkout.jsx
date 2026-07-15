@@ -9,6 +9,8 @@ import AddressForm from '../components/checkout/AddressForm';
 import OrderSummary from '../components/checkout/OrderSummary';
 import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 import RazorpayButton from '../components/RazorpayButton';
+import CancellationPolicy from '../components/checkout/CancellationPolicy';
+import EnhancedBillDetails from '../components/checkout/EnhancedBillDetails';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -259,7 +261,12 @@ const Checkout = () => {
           </div>
 
           <div className="space-y-4">
-            <OrderSummary cartItems={cartItems} cartTotal={cartTotal} />
+            <EnhancedBillDetails 
+              cartTotal={cartTotal} 
+              itemCount={cartItems.length}
+            />
+
+            <CancellationPolicy />
 
             {error && (
               <div className="bg-red-100 text-red-800 p-3 rounded-lg text-sm">{error}</div>

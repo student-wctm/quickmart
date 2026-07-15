@@ -45,6 +45,8 @@ const orderSchema = new mongoose.Schema(
         city: String,
         state: String,
         pincode: String,
+        latitude: Number,  // Store customer location latitude
+        longitude: Number, // Store customer location longitude
       },
     },
     orderItems: [orderItemSchema],
